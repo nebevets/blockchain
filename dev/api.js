@@ -2,10 +2,10 @@ const PORT = 3000;
 const Blockchain = require("./blockchain");
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
+
 const app = express();
 const nebCoin = new Blockchain();
 const nodeAddress = uuidv4().split("-").join("");
-console.log(nodeAddress);
 
 app.use(express.json());
 
