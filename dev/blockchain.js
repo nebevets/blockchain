@@ -1,8 +1,12 @@
 const sha256 = require("sha256");
+const DOMAIN = process.argv[3];
+const PORT = process.argv[2];
 
 class Blockchain {
   constructor() {
     this.chain = [];
+    this.currentNodeURL = `http://${DOMAIN}:${PORT}`;
+    this.networkNodes = [];
     this.pendingTransactions = [];
     // create genesis block
     this.createNewBlock(0, "0", "0");

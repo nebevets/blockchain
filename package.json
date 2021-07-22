@@ -4,12 +4,17 @@
   "description": "a blockchain in javascript",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --watch dev -e js dev/api.js",
+    "node_1": "nodemon --watch dev -e js dev/network-node.js 3001 localhost",
+    "node_2": "nodemon --watch dev -e js dev/network-node.js 3002 localhost",
+    "node_3": "nodemon --watch dev -e js dev/network-node.js 3003 localhost",
+    "node_4": "nodemon --watch dev -e js dev/network-node.js 3004 localhost",
+    "node_5": "nodemon --watch dev -e js dev/network-node.js 3005 localhost",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "steve benedict",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.1",
     "express": "^4.17.1",
     "nodemon": "^2.0.12",
     "sha256": "^0.2.0",
