@@ -9,6 +9,15 @@ const nodeAddress = uuidv4().split("-").join("");
 
 const PORT = process.argv[2];
 
+const updateNetworkNodes = (nodeURL) => {
+  if (
+    nebCoin.currentNodeURL !== nodeURL &&
+    !nebCoin.networkNodes.includes(nodeURL)
+  ) {
+    nebCoin.networkNodes.push(nodeURL);
+  }
+};
+
 app.use(express.json());
 
 app.get("/blockchain", (req, res) => {
@@ -39,48 +48,48 @@ app.get("/mine", (req, res) => {
 
 app.post("/broadcast-node", ({ body: { newNodeURL } }, res) => {
   if (!nebCoin.networkNodes.includes(newNodeURL)) {
-    nebCoin.networkNodes.push[newNodeURL];
-    const promises = [];
-    nebCoin.networkNodes.forEach((node) => {
+    nebCoin.networkNodes.push(newNodeURL);
+    const promises = nebCoin.networkNodes.map((networkNode) => {
       axios({
         data: {
-          newNodeURL: node,
+          newNodeURL,
         },
         method: "post",
-        url: `${newNodeURL}/register-node`,
+        url: `${networkNode}/register-node`,
       });
     });
     Promise.all(promises)
-      .then((data) => {
+      .then(() => {
         axios({
-          data: { allNetworkNodes: [...nebCoin.networkNodes] },
+          data: {
+            allNetworkNodes: [...nebCoin.networkNodes, nebCoin.currentNodeURL],
+          },
           method: "post",
           url: `${newNodeURL}/update-nodes`,
         })
-          .then((_data) => {
+          .then(() => {
             res.send({
               message: "network node broadcast complete.",
               success: true,
             });
           })
-          .catch((err) => console.log(err));
+          .catch((err) => console.log(err.message));
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log(err.message));
   }
 });
 
 app.post("/register-node", ({ body: { newNodeURL } }, res) => {
-  const isCurrentNode = nebCoin.currentNodeURL === newNodeURL;
-  const isNodePresent = nebCoin.networkNodes.includes(newNodeURL);
-
-  if (!isCurrentNode && !isNodePresent) {
-    nebCoin.networkNodes.push(newNodeURL);
-  }
-
+  updateNetworkNodes(newNodeURL);
   res.send({ message: "new node registered.", success: true });
 });
 
-app.post("/update-nodes", (req, res) => {});
+app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
+  allNetworkNodes.forEach((networkNode) => {
+    updateNetworkNodes(networkNode);
+  });
+  res.send({ message: "nodes updated", success: true });
+});
 
 app.post("/transaction", ({ body: { amount, recipient, sender } }, res) => {
   const blockIndex = nebCoin.createNewTransaction(amount, recipient, sender);

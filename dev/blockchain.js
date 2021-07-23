@@ -6,6 +6,7 @@ class Blockchain {
   constructor() {
     this.chain = [];
     this.currentNodeURL = `http://${DOMAIN}:${PORT}`;
+    console.log(this.currentNodeURL);
     this.networkNodes = [];
     this.pendingTransactions = [];
     // create genesis block
