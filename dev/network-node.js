@@ -20,11 +20,11 @@ const updateNetworkNodes = (nodeURL) => {
 
 app.use(express.json());
 
-app.get("/blockchain", (req, res) => {
+app.get("/blockchain", (_req, res) => {
   res.send(nebCoin);
 });
 
-app.get("/mine", (req, res) => {
+app.get("/mine", (_req, res) => {
   const { hash: previousBlockHash, index } = nebCoin.getLastBlock();
   const currentBlockData = {
     index: index + 1,
@@ -36,12 +36,8 @@ app.get("/mine", (req, res) => {
     currentBlockData,
     nonce
   );
-  nebCoin.createNewTransaction(50, "00", nodeAddress);
-  const newBlock = nebCoin.createNewBlock(
-    nonce,
-    previousBlockHash,
-    newBlockHash
-  );
+  nebCoin.createTransaction(50, "00", nodeAddress);
+  const newBlock = nebCoin.createBlock(nonce, previousBlockHash, newBlockHash);
 
   res.send({ note: "new block mined successfully", block: newBlock });
 });
@@ -81,7 +77,7 @@ app.post("/broadcast-node", ({ body: { newNodeURL } }, res) => {
 
 app.post("/register-node", ({ body: { newNodeURL } }, res) => {
   updateNetworkNodes(newNodeURL);
-  res.send({ message: "new node registered.", success: true });
+  res.send({ message: "node registered.", success: true });
 });
 
 app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
@@ -92,7 +88,7 @@ app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
 });
 
 app.post("/transaction", ({ body: { amount, recipient, sender } }, res) => {
-  const blockIndex = nebCoin.createNewTransaction(amount, recipient, sender);
+  const blockIndex = nebCoin.createTransaction(amount, recipient, sender);
   res.send({ note: `transaction to be added to block ${blockIndex}` });
 });
 

@@ -6,14 +6,13 @@ class Blockchain {
   constructor() {
     this.chain = [];
     this.currentNodeURL = `http://${DOMAIN}:${PORT}`;
-    console.log(this.currentNodeURL);
     this.networkNodes = [];
     this.pendingTransactions = [];
     // create genesis block
-    this.createNewBlock(0, "0", "0");
+    this.createBlock(0, "0", "0");
   }
 
-  createNewBlock(nonce, previousBlockHash, hash) {
+  createBlock(nonce, previousBlockHash, hash) {
     const newBlock = {
       hash,
       index: this.chain.length + 1,
@@ -28,7 +27,7 @@ class Blockchain {
     return newBlock;
   }
 
-  createNewTransaction(amount, sender, recipient) {
+  createTransaction(amount, sender, recipient) {
     const newTransaction = {
       amount,
       recipient,
