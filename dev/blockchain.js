@@ -1,3 +1,4 @@
+const { getFormattedUUID } = require("./helpers");
 const sha256 = require("sha256");
 const DOMAIN = process.argv[3];
 const PORT = process.argv[2];
@@ -6,14 +7,13 @@ class Blockchain {
   constructor() {
     this.chain = [];
     this.currentNodeURL = `http://${DOMAIN}:${PORT}`;
-    console.log(this.currentNodeURL);
     this.networkNodes = [];
     this.pendingTransactions = [];
     // create genesis block
-    this.createNewBlock(0, "0", "0");
+    this.createBlock(0, "0", "0");
   }
 
-  createNewBlock(nonce, previousBlockHash, hash) {
+  createBlock(nonce, previousBlockHash, hash) {
     const newBlock = {
       hash,
       index: this.chain.length + 1,
@@ -28,14 +28,17 @@ class Blockchain {
     return newBlock;
   }
 
-  createNewTransaction(amount, sender, recipient) {
-    const newTransaction = {
+  createTransaction(amount, sender, recipient) {
+    return {
       amount,
       recipient,
       sender,
+      transactionID: getFormattedUUID(),
     };
-    this.pendingTransactions.push(newTransaction);
+  }
 
+  addPendingTransaction(transaction) {
+    this.pendingTransactions.push(transaction);
     return this.getLastBlock()["index"] + 1;
   }
 
