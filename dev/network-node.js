@@ -37,10 +37,57 @@ app.get("/mine", (_req, res) => {
     currentBlockData,
     nonce
   );
-  nebCoin.createTransaction(50, "00", nodeAddress);
   const newBlock = nebCoin.createBlock(nonce, previousBlockHash, newBlockHash);
 
-  res.send({ note: "new block mined successfully", block: newBlock });
+  const promises = nebCoin.networkNodes.map((networkNode) => {
+    axios({
+      data: {
+        newBlock,
+      },
+      method: "post",
+      url: `${networkNode}/broadcast-block`,
+    });
+  });
+  Promise.all(promises)
+    .then(() =>
+      axios({
+        data: {
+          amount: 50,
+          receipient: nodeAddress,
+          sender: "00",
+        },
+        method: "post",
+        url: `${nebCoin.currentNodeURL}/transaction/broadcast`,
+      })
+    )
+    .then(() =>
+      res.send({
+        block: newBlock,
+        message: "new block mined and broadcast successfully",
+        success: true,
+      })
+    )
+    .catch((err) => console.log(err.message));
+});
+
+app.post("/broadcast-block", ({ body: { newBlock } }, res) => {
+  const { hash: lastBlockHash, index: lastBlockIndex } = nebCoin.getLastBlock();
+  if (
+    lastBlockHash === newBlock.previousBlockHash &&
+    lastBlockIndex + 1 === newBlock.index
+  ) {
+    nebCoin.chain.push(newBlock);
+    nebCoin.pendingTransactions = [];
+    res.send({
+      message: "blockchain updated",
+      success: true,
+    });
+  } else {
+    res.send({
+      message: "new block rejected",
+      success: false,
+    });
+  }
 });
 
 app.post("/broadcast-node", ({ body: { newNodeURL } }, res) => {
