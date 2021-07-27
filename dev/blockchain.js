@@ -1,3 +1,4 @@
+const { getFormattedUUID } = require("./helpers");
 const sha256 = require("sha256");
 const DOMAIN = process.argv[3];
 const PORT = process.argv[2];
@@ -28,13 +29,16 @@ class Blockchain {
   }
 
   createTransaction(amount, sender, recipient) {
-    const newTransaction = {
+    return {
       amount,
       recipient,
       sender,
+      transactionID: getFormattedUUID(),
     };
-    this.pendingTransactions.push(newTransaction);
+  }
 
+  addPendingTransaction(transaction) {
+    this.pendingTransactions.push(transaction);
     return this.getLastBlock()["index"] + 1;
   }
 
