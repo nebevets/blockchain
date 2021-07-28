@@ -13,7 +13,7 @@ class Blockchain {
     this.createBlock(0, "0", "0");
   }
 
-  chainIsValid(blockchain) {
+  isValidChain(blockchain) {
     // check blockchain block integrity, except the genesis block
     for (let i = 1; i < blockchain.length; i++) {
       const previousBlock = blockchain[i - 1];

@@ -47,7 +47,7 @@ app.get("/consensus", async (_req, res) => {
 
     console.log(maxChainLength, newLongestChain);
 
-    if (newLongestChain && nebCoin.chainIsValid(newLongestChain)) {
+    if (newLongestChain && nebCoin.isValidChain(newLongestChain)) {
       nebCoin.chain = newLongestChain;
       nebCoin.pendingTransactions = newPendingTransactions;
     }
