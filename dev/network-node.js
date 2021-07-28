@@ -25,6 +25,42 @@ app.get("/blockchain", (_req, res) => {
   res.send(nebCoin);
 });
 
+app.get("/consensus", async (_req, res) => {
+  const blockchains = [];
+  try {
+    for (const networkNode of nebCoin.networkNodes) {
+      const { data } = await axios.get(`${networkNode}/blockchain`);
+      blockchains.push(data);
+    }
+    let maxChainLength = nebCoin.chain.length;
+    let newLongestChain = null;
+    let newPendingTransactions = null;
+
+    blockchains.forEach(({ chain, pendingTransactions }) => {
+      console.log(chain.length, maxChainLength);
+      if (chain.length > maxChainLength) {
+        maxChainLength = chain.length;
+        newLongestChain = chain;
+        newPendingTransactions = pendingTransactions;
+      }
+    });
+
+    console.log(maxChainLength, newLongestChain);
+
+    if (newLongestChain && nebCoin.isValidChain(newLongestChain)) {
+      nebCoin.chain = newLongestChain;
+      nebCoin.pendingTransactions = newPendingTransactions;
+    }
+
+    res.send({
+      message: "longest valid chain is set",
+      success: true,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 app.get("/mine", (_req, res) => {
   const { hash: previousBlockHash, index } = nebCoin.getLastBlock();
   const currentBlockData = {
