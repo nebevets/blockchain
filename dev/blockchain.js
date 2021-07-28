@@ -67,16 +67,67 @@ class Blockchain {
 
   addPendingTransaction(transaction) {
     this.pendingTransactions.push(transaction);
+
     return this.getLastBlock()["index"] + 1;
+  }
+
+  getAddress(address) {
+    const addressTransactions = [];
+    this.chain.forEach((block) => {
+      block.transactions.forEach((transaction) => {
+        const { recipient, sender } = transaction;
+        if (recipient === address || sender === address) {
+          addressTransactions.push(transaction);
+        }
+      });
+    });
+    const balance = addressTransactions.reduce(
+      (total, { amount, recipient }) => {
+        if (recipient === address) {
+          return (total += amount);
+        }
+        return (total -= amount);
+      },
+      0
+    );
+
+    return {
+      addressTransactions,
+      balance,
+    };
+  }
+
+  getBlock(blockHash) {
+    return this.chain.filter(({ hash }) => hash === blockHash);
   }
 
   getLastBlock() {
     return this.chain[this.chain.length - 1];
   }
 
+  getTransaction(transactionID) {
+    const data = {
+      block: null,
+      transaction: null,
+    };
+    for (const block of this.chain) {
+      for (const transaction of block.transactions) {
+        if (transaction.transactionID === transactionID) {
+          data.block = block;
+          data.transaction = transaction;
+
+          return data;
+        }
+      }
+    }
+
+    return data;
+  }
+
   hashBlock(previousBlockHash, currentBlockData, nonce) {
     const dataString =
       previousBlockHash + nonce.toString() + JSON.stringify(currentBlockData);
+
     return sha256(dataString);
   }
 
