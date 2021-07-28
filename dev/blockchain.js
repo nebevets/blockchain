@@ -13,6 +13,39 @@ class Blockchain {
     this.createBlock(0, "0", "0");
   }
 
+  chainIsValid(blockchain) {
+    const [{ hash, nonce, previousBlockHash, transactions }, hashedBlocks] =
+      blockchain;
+    console.log(hash, hashedBlocks.length);
+    return (
+      hash === "0" &&
+      nonce === 100 &&
+      previousBlockHash === "0" &&
+      transactions.length === 0 &&
+      (hashedBlocks ?? []).every(
+        ({
+          hash,
+          nonce,
+          previousBlockHash: { hash: previousHash },
+          transactions,
+        }) => {
+          const blockHash = this.hashBlock(
+            previousHash,
+            {
+              index,
+              transactions,
+            },
+            nonce
+          );
+          return (
+            hash === previousBlockHash.hash &&
+            blockHash.substring(0, 4) === "0000"
+          );
+        }
+      )
+    );
+  }
+
   createBlock(nonce, previousBlockHash, hash) {
     const newBlock = {
       hash,
