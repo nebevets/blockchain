@@ -14,35 +14,30 @@ class Blockchain {
   }
 
   chainIsValid(blockchain) {
-    const [{ hash, nonce, previousBlockHash, transactions }, hashedBlocks] =
-      blockchain;
-    console.log(hash, hashedBlocks.length);
+    // check blockchain block integrity, except the genesis block
+    for (let i = 1; i < blockchain.length; i++) {
+      const previousBlock = blockchain[i - 1];
+      const currentBlock = blockchain[i];
+      if (currentBlock.previousBlockHash !== previousBlock.hash) {
+        return false;
+      }
+      const blockHash = this.hashBlock(
+        previousBlock.hash,
+        { index: currentBlock.index, transactions: currentBlock.transactions },
+        currentBlock.nonce
+      );
+      if (blockHash.substring(0, 4) !== "0000") {
+        return false;
+      }
+    }
+    // check the genesis block integrity
+    const [{ hash, nonce, previousBlockHash, transactions }] = blockchain;
+
     return (
       hash === "0" &&
-      nonce === 100 &&
+      nonce === 0 &&
       previousBlockHash === "0" &&
-      transactions.length === 0 &&
-      (hashedBlocks ?? []).every(
-        ({
-          hash,
-          nonce,
-          previousBlockHash: { hash: previousHash },
-          transactions,
-        }) => {
-          const blockHash = this.hashBlock(
-            previousHash,
-            {
-              index,
-              transactions,
-            },
-            nonce
-          );
-          return (
-            hash === previousBlockHash.hash &&
-            blockHash.substring(0, 4) === "0000"
-          );
-        }
-      )
+      transactions.length === 0
     );
   }
 
