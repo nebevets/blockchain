@@ -57,6 +57,7 @@ class Blockchain {
   }
 
   createTransaction(amount, sender, recipient) {
+    // no check to see if sender actually has the amount they are trying to send
     return {
       amount,
       recipient,
