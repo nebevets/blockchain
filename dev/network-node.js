@@ -89,7 +89,7 @@ app.get("/mine", (_req, res) => {
       axios({
         data: {
           amount: 50,
-          receipient: nodeAddress,
+          recipient: nodeAddress,
           sender: "00",
         },
         method: "post",
@@ -161,6 +161,7 @@ app.post("/broadcast-node", ({ body: { newNodeURL } }, res) => {
 
 app.post("/register-node", ({ body: { newNodeURL } }, res) => {
   updateNetworkNodes(newNodeURL);
+
   res.send({ message: "node registered.", success: true });
 });
 
@@ -168,6 +169,7 @@ app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
   allNetworkNodes.forEach((networkNode) => {
     updateNetworkNodes(networkNode);
   });
+
   res.send({ message: "nodes updated", success: true });
 });
 
@@ -209,5 +211,29 @@ app.post(
       .catch((err) => console.log(err.message));
   }
 );
+
+app.get("/address/:address", ({ params: { address } }, res) => {
+  const addressData = nebCoin.getAddress(address);
+
+  res.send({
+    ...addressData,
+  });
+});
+
+app.get("/block/:blockHash", ({ params: { blockHash } }, res) => {
+  const [block] = nebCoin.getBlock(blockHash);
+
+  res.send({
+    block: block ?? null,
+  });
+});
+
+app.get("/transaction/:transactionID", ({ params: { transactionID } }, res) => {
+  const transaction = nebCoin.getTransaction(transactionID);
+
+  res.send({
+    ...transaction,
+  });
+});
 
 app.listen(PORT, () => console.log(`listening on port: ${PORT}`));
