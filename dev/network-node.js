@@ -1,8 +1,9 @@
-const { getFormattedUUID } = require("./helpers");
+const { getFormattedUUID, sendError } = require("./helpers");
 const axios = require("axios");
 const Blockchain = require("./blockchain");
 const express = require("express");
 
+// maybe use this address to privatize endpoints?
 const nodeAddress = getFormattedUUID();
 
 const app = express();
@@ -22,7 +23,9 @@ const updateNetworkNodes = (nodeURL) => {
 app.use(express.json());
 
 app.get("/blockchain", (_req, res) => {
-  res.send(nebCoin);
+  res.status(200).send({
+    ...nebCoin,
+  });
 });
 
 app.get("/consensus", async (_req, res) => {
@@ -37,7 +40,6 @@ app.get("/consensus", async (_req, res) => {
     let newPendingTransactions = null;
 
     blockchains.forEach(({ chain, pendingTransactions }) => {
-      console.log(chain.length, maxChainLength);
       if (chain.length > maxChainLength) {
         maxChainLength = chain.length;
         newLongestChain = chain;
@@ -45,23 +47,20 @@ app.get("/consensus", async (_req, res) => {
       }
     });
 
-    console.log(maxChainLength, newLongestChain);
-
     if (newLongestChain && nebCoin.isValidChain(newLongestChain)) {
       nebCoin.chain = newLongestChain;
       nebCoin.pendingTransactions = newPendingTransactions;
     }
 
-    res.send({
+    res.status(200).send({
       message: "longest valid chain is set",
-      success: true,
     });
   } catch (err) {
-    console.log(err);
+    sendError(err, res);
   }
 });
 
-app.get("/mine", (_req, res) => {
+app.get("/mine", async (_req, res) => {
   const { hash: previousBlockHash, index } = nebCoin.getLastBlock();
   const currentBlockData = {
     index: index + 1,
@@ -75,140 +74,185 @@ app.get("/mine", (_req, res) => {
   );
   const newBlock = nebCoin.createBlock(nonce, previousBlockHash, newBlockHash);
 
-  const promises = nebCoin.networkNodes.map((networkNode) => {
-    axios({
-      data: {
-        newBlock,
-      },
-      method: "post",
-      url: `${networkNode}/broadcast-block`,
-    });
-  });
-  Promise.all(promises)
-    .then(() =>
-      axios({
-        data: {
-          amount: 50,
-          recipient: nodeAddress,
-          sender: "00",
-        },
-        method: "post",
-        url: `${nebCoin.currentNodeURL}/transaction/broadcast`,
-      })
-    )
-    .then(() =>
-      res.send({
-        block: newBlock,
-        message: "new block mined and broadcast successfully",
-        success: true,
-      })
-    )
-    .catch((err) => console.log(err.message));
-});
-
-app.post("/broadcast-block", ({ body: { newBlock } }, res) => {
-  const { hash: lastBlockHash, index: lastBlockIndex } = nebCoin.getLastBlock();
-  if (
-    lastBlockHash === newBlock.previousBlockHash &&
-    lastBlockIndex + 1 === newBlock.index
-  ) {
-    nebCoin.chain.push(newBlock);
-    nebCoin.pendingTransactions = [];
-    res.send({
-      message: "blockchain updated",
-      success: true,
-    });
-  } else {
-    res.send({
-      message: "new block rejected",
-      success: false,
-    });
-  }
-});
-
-app.post("/broadcast-node", ({ body: { newNodeURL } }, res) => {
-  if (!nebCoin.networkNodes.includes(newNodeURL)) {
-    nebCoin.networkNodes.push(newNodeURL);
+  try {
     const promises = nebCoin.networkNodes.map((networkNode) => {
       axios({
         data: {
-          newNodeURL,
+          newBlock,
         },
         method: "post",
-        url: `${networkNode}/register-node`,
+        url: `${networkNode}/broadcast-block`,
       });
     });
-    Promise.all(promises)
-      .then(() => {
+    await Promise.all(promises);
+    await axios({
+      data: {
+        amount: 50,
+        recipient: nodeAddress,
+        sender: "00",
+      },
+      method: "post",
+      url: `${nebCoin.currentNodeURL}/transaction/broadcast`,
+    });
+    res.status(200).send({
+      block: newBlock,
+      message: "new block mined and broadcast successfully",
+    });
+  } catch (err) {
+    sendError(err, res);
+  }
+});
+
+app.post("/broadcast-block", ({ body: { newBlock } }, res) => {
+  try {
+    if (newBlock == null) {
+      throw new Error("no block to broadcast. please specify a block.");
+    }
+    const { hash: lastBlockHash, index: lastBlockIndex } =
+      nebCoin.getLastBlock();
+    if (
+      lastBlockHash === newBlock.previousBlockHash &&
+      lastBlockIndex + 1 === newBlock.index
+    ) {
+      nebCoin.chain.push(newBlock);
+      nebCoin.pendingTransactions = [];
+      res.status(200).send({
+        message: "blockchain updated",
+      });
+    } else {
+      res.status(422).send({
+        message: "new block rejected",
+      });
+    }
+  } catch (err) {
+    sendError(err, res);
+  }
+});
+
+app.post("/broadcast-node", async ({ body: { newNodeURL } }, res) => {
+  try {
+    // need a way to validate the url:
+    //   1. make sure its a valid url
+    //   2. make sure its really a node for these endpoints
+    //   3. https support
+    if (newNodeURL == null) {
+      throw new Error("no network node specified.");
+    }
+    if (
+      !nebCoin.networkNodes.includes(newNodeURL) &&
+      newNodeURL !== nebCoin.currentNodeURL
+    ) {
+      nebCoin.networkNodes.push(newNodeURL);
+      const promises = nebCoin.networkNodes.map((networkNode) => {
         axios({
           data: {
-            allNetworkNodes: [...nebCoin.networkNodes, nebCoin.currentNodeURL],
+            newNodeURL,
           },
           method: "post",
-          url: `${newNodeURL}/update-nodes`,
-        })
-          .then(() => {
-            res.send({
-              message: "network node broadcast complete.",
-              success: true,
-            });
-          })
-          .catch((err) => console.log(err.message));
-      })
-      .catch((err) => console.log(err.message));
+          url: `${networkNode}/register-node`,
+        });
+      });
+      await Promise.all(promises);
+      await axios({
+        data: {
+          allNetworkNodes: [...nebCoin.networkNodes, nebCoin.currentNodeURL],
+        },
+        method: "post",
+        url: `${newNodeURL}/update-nodes`,
+      });
+      res.status(200).send({
+        message: "network node broadcast complete.",
+      });
+    } else {
+      res.status(403).send({
+        message: "this network node exists.",
+      });
+    }
+  } catch (err) {
+    sendError(err, res);
   }
 });
 
 app.post("/register-node", ({ body: { newNodeURL } }, res) => {
-  updateNetworkNodes(newNodeURL);
-
-  res.send({ message: "node registered.", success: true });
+  try {
+    if (newNodeURL == null) {
+      throw new Error("no network node specified.");
+    }
+    updateNetworkNodes(newNodeURL);
+    res.status(200).send({ message: "node registered." });
+  } catch (err) {
+    sendError(err, res);
+  }
 });
 
 app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
-  allNetworkNodes.forEach((networkNode) => {
-    updateNetworkNodes(networkNode);
-  });
-
-  res.send({ message: "nodes updated", success: true });
+  try {
+    if (!Array.isArray(allNetworkNodes)) {
+      throw new Error("invalid data");
+    }
+    allNetworkNodes.forEach((networkNode) => {
+      updateNetworkNodes(networkNode);
+    });
+    res.status(200).send({ message: "nodes updated.", success: true });
+  } catch (err) {
+    sendError(err, res);
+  }
 });
 
 app.post(
   "/transaction",
   ({ body: { amount, recipient, sender, transactionID } }, res) => {
-    const blockIndex = nebCoin.addPendingTransaction({
-      amount,
-      recipient,
-      sender,
-      transactionID,
-    });
-    res.send({
-      message: `transaction added to block: ${blockIndex}`,
-      success: true,
-    });
+    try {
+      if (
+        [amount, recipient, sender, transactionID].some(
+          (value) => value == null
+        )
+      ) {
+        throw new Error("invalid data");
+      }
+      const blockIndex = nebCoin.addPendingTransaction({
+        amount,
+        recipient,
+        sender,
+        transactionID,
+      });
+      res.send({
+        message: `transaction added to block: ${blockIndex}`,
+        success: true,
+      });
+    } catch (err) {
+      sendError(err, res);
+    }
   }
 );
 
 app.post(
   "/transaction/broadcast",
-  ({ body: { amount, recipient, sender } }, res) => {
-    const newTransaction = nebCoin.createTransaction(amount, recipient, sender);
-    nebCoin.addPendingTransaction(newTransaction);
-    const promises = nebCoin.networkNodes.map((networkNode) => {
-      axios({
-        data: newTransaction,
-        method: "post",
-        url: `${networkNode}/transaction`,
-      });
-    });
-    Promise.all(promises)
-      .then(() => {
-        res.send({
-          message: "transaction broadcast complete",
-          success: true,
+  async ({ body: { amount, recipient, sender } }, res) => {
+    try {
+      if ([amount, recipient, sender].some((value) => value == null)) {
+        throw new Error("invalid transaction data");
+      }
+      const newTransaction = nebCoin.createTransaction(
+        amount,
+        recipient,
+        sender
+      );
+      nebCoin.addPendingTransaction(newTransaction);
+      const promises = nebCoin.networkNodes.map((networkNode) => {
+        axios({
+          data: newTransaction,
+          method: "post",
+          url: `${networkNode}/transaction`,
         });
-      })
-      .catch((err) => console.log(err.message));
+      });
+      await Promise.all(promises);
+      res.status(200).send({
+        message: "transaction broadcast complete",
+      });
+    } catch (err) {
+      sendError(err, res);
+    }
   }
 );
 
