@@ -259,7 +259,7 @@ app.post(
 app.get("/address/:address", ({ params: { address } }, res) => {
   const addressData = nebCoin.getAddress(address);
 
-  res.send({
+  res.status(200).send({
     ...addressData,
   });
 });
@@ -267,7 +267,7 @@ app.get("/address/:address", ({ params: { address } }, res) => {
 app.get("/block/:blockHash", ({ params: { blockHash } }, res) => {
   const [block] = nebCoin.getBlock(blockHash);
 
-  res.send({
+  res.status(200).send({
     block: block ?? null,
   });
 });
@@ -275,7 +275,7 @@ app.get("/block/:blockHash", ({ params: { blockHash } }, res) => {
 app.get("/transaction/:transactionID", ({ params: { transactionID } }, res) => {
   const transaction = nebCoin.getTransaction(transactionID);
 
-  res.send({
+  res.status(200).send({
     ...transaction,
   });
 });
