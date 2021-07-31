@@ -22,6 +22,22 @@ const updateNetworkNodes = (nodeURL) => {
 
 app.use(express.json());
 
+app.get("/address/:address", ({ params: { address } }, res) => {
+  const addressData = nebCoin.getAddress(address);
+
+  res.status(200).send({
+    ...addressData,
+  });
+});
+
+app.get("/block/:blockHash", ({ params: { blockHash } }, res) => {
+  const [block] = nebCoin.getBlock(blockHash);
+
+  res.status(200).send({
+    block: block ?? null,
+  });
+});
+
 app.get("/blockchain", (_req, res) => {
   res.status(200).send({
     ...nebCoin,
@@ -101,6 +117,14 @@ app.get("/mine", async (_req, res) => {
   } catch (err) {
     sendError(err, res);
   }
+});
+
+app.get("/transaction/:transactionID", ({ params: { transactionID } }, res) => {
+  const transaction = nebCoin.getTransaction(transactionID);
+
+  res.status(200).send({
+    ...transaction,
+  });
 });
 
 app.post("/broadcast-block", ({ body: { newBlock } }, res) => {
@@ -185,20 +209,6 @@ app.post("/register-node", ({ body: { newNodeURL } }, res) => {
   }
 });
 
-app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
-  try {
-    if (!Array.isArray(allNetworkNodes)) {
-      throw new Error("invalid data");
-    }
-    allNetworkNodes.forEach((networkNode) => {
-      updateNetworkNodes(networkNode);
-    });
-    res.status(200).send({ message: "nodes updated.", success: true });
-  } catch (err) {
-    sendError(err, res);
-  }
-});
-
 app.post(
   "/transaction",
   ({ body: { amount, recipient, sender, transactionID } }, res) => {
@@ -256,28 +266,18 @@ app.post(
   }
 );
 
-app.get("/address/:address", ({ params: { address } }, res) => {
-  const addressData = nebCoin.getAddress(address);
-
-  res.status(200).send({
-    ...addressData,
-  });
-});
-
-app.get("/block/:blockHash", ({ params: { blockHash } }, res) => {
-  const [block] = nebCoin.getBlock(blockHash);
-
-  res.status(200).send({
-    block: block ?? null,
-  });
-});
-
-app.get("/transaction/:transactionID", ({ params: { transactionID } }, res) => {
-  const transaction = nebCoin.getTransaction(transactionID);
-
-  res.status(200).send({
-    ...transaction,
-  });
+app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
+  try {
+    if (!Array.isArray(allNetworkNodes)) {
+      throw new Error("invalid data");
+    }
+    allNetworkNodes.forEach((networkNode) => {
+      updateNetworkNodes(networkNode);
+    });
+    res.status(200).send({ message: "nodes updated.", success: true });
+  } catch (err) {
+    sendError(err, res);
+  }
 });
 
 app.listen(PORT, () => console.log(`listening on port: ${PORT}`));

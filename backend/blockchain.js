@@ -13,32 +13,10 @@ class Blockchain {
     this.createBlock(0, "0", "0");
   }
 
-  isValidChain(blockchain) {
-    // check blockchain block integrity, except the genesis block
-    for (let i = 1; i < blockchain.length; i++) {
-      const previousBlock = blockchain[i - 1];
-      const currentBlock = blockchain[i];
-      if (currentBlock.previousBlockHash !== previousBlock.hash) {
-        return false;
-      }
-      const blockHash = this.hashBlock(
-        previousBlock.hash,
-        { index: currentBlock.index, transactions: currentBlock.transactions },
-        currentBlock.nonce
-      );
-      if (blockHash.substring(0, 4) !== "0000") {
-        return false;
-      }
-    }
-    // check the genesis block integrity
-    const [{ hash, nonce, previousBlockHash, transactions }] = blockchain;
+  addPendingTransaction(transaction) {
+    this.pendingTransactions.push(transaction);
 
-    return (
-      hash === "0" &&
-      nonce === 0 &&
-      previousBlockHash === "0" &&
-      transactions.length === 0
-    );
+    return this.getLastBlock()["index"] + 1;
   }
 
   createBlock(nonce, previousBlockHash, hash) {
@@ -64,12 +42,6 @@ class Blockchain {
       sender,
       transactionID: getFormattedUUID(),
     };
-  }
-
-  addPendingTransaction(transaction) {
-    this.pendingTransactions.push(transaction);
-
-    return this.getLastBlock()["index"] + 1;
   }
 
   getAddress(address) {
@@ -130,6 +102,34 @@ class Blockchain {
       previousBlockHash + nonce.toString() + JSON.stringify(currentBlockData);
 
     return sha256(dataString);
+  }
+
+  isValidChain(blockchain) {
+    // check blockchain block integrity, except the genesis block
+    for (let i = 1; i < blockchain.length; i++) {
+      const previousBlock = blockchain[i - 1];
+      const currentBlock = blockchain[i];
+      if (currentBlock.previousBlockHash !== previousBlock.hash) {
+        return false;
+      }
+      const blockHash = this.hashBlock(
+        previousBlock.hash,
+        { index: currentBlock.index, transactions: currentBlock.transactions },
+        currentBlock.nonce
+      );
+      if (blockHash.substring(0, 4) !== "0000") {
+        return false;
+      }
+    }
+    // check the genesis block integrity
+    const [{ hash, nonce, previousBlockHash, transactions }] = blockchain;
+
+    return (
+      hash === "0" &&
+      nonce === 0 &&
+      previousBlockHash === "0" &&
+      transactions.length === 0
+    );
   }
 
   proofOfWork(previousBlockHash, currentBlockData) {
