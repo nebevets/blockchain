@@ -2,6 +2,7 @@ const { getFormattedUUID, sendError } = require("./helpers");
 const axios = require("axios");
 const Blockchain = require("./blockchain");
 const express = require("express");
+const path = require("path");
 
 // maybe use this address to privatize endpoints?
 const nodeAddress = getFormattedUUID();
@@ -279,5 +280,7 @@ app.post("/update-nodes", ({ body: { allNetworkNodes } }, res) => {
     sendError(err, res);
   }
 });
+
+app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "/index.html")));
 
 app.listen(PORT, () => console.log(`listening on port: ${PORT}`));
