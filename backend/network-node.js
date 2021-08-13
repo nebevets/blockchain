@@ -155,18 +155,19 @@ app.post("/broadcast-block", ({ body: { newBlock } }, res) => {
 });
 
 app.post("/broadcast-node", async ({ body: { newNodeURL } }, res) => {
-  // need a way to validate the url:
-  //   1. make sure its a valid url
-  //   2. make sure its really a node for these endpoints
-  //   3. https support
-  if (newNodeURL == null) {
-    throw new Error("no network node specified.");
-  }
-  if (!nebCoin.networkNodes.includes(newNodeURL)) {
-    if (newNodeURL !== nebCoin.currentNodeURL) {
-      nebCoin.networkNodes.push(newNodeURL);
+  try {
+    // need a way to validate the url:
+    //   1. make sure its a valid url
+    //   2. make sure its really a node for these endpoints
+    //   3. https support
+    if (newNodeURL == null) {
+      throw new Error("no network node specified.");
     }
-    try {
+    if (
+      !nebCoin.networkNodes.includes(newNodeURL) &&
+      newNodeURL !== nebCoin.currentNodeURL
+    ) {
+      nebCoin.networkNodes.push(newNodeURL);
       const promises = nebCoin.networkNodes.map((networkNode) => {
         axios({
           data: {
@@ -187,14 +188,13 @@ app.post("/broadcast-node", async ({ body: { newNodeURL } }, res) => {
       res.status(200).send({
         message: "network node broadcast complete.",
       });
-    } catch (err) {
-      console.log("in catch");
-      sendError(err, res);
+    } else {
+      res.status(403).send({
+        message: "this network node exists.",
+      });
     }
-  } else {
-    res.status(403).send({
-      message: "this network node exists.",
-    });
+  } catch (err) {
+    sendError(err, res);
   }
 });
 
