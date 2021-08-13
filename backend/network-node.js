@@ -104,7 +104,7 @@ app.get("/mine", async (_req, res) => {
     await Promise.all(promises);
     await axios({
       data: {
-        amount: 50,
+        amount: 6.25,
         recipient: nodeAddress,
         sender: "00",
       },
@@ -246,8 +246,8 @@ app.post(
       }
       const newTransaction = nebCoin.createTransaction(
         amount,
-        recipient,
-        sender
+        sender,
+        recipient
       );
       nebCoin.addPendingTransaction(newTransaction);
       const promises = nebCoin.networkNodes.map((networkNode) => {

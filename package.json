@@ -4,11 +4,11 @@
   "description": "a blockchain in javascript",
   "main": "index.js",
   "scripts": {
-    "node_1": "nodemon --watch dev -e js backend/network-node.js 3001 localhost",
-    "node_2": "nodemon --watch dev -e js backend/network-node.js 3002 localhost",
-    "node_3": "nodemon --watch dev -e js backend/network-node.js 3003 localhost",
-    "node_4": "nodemon --watch dev -e js backend/network-node.js 3004 localhost",
-    "node_5": "nodemon --watch dev -e js backend/network-node.js 3005 localhost",
+    "node_1": "nodemon --watch backend -e js backend/network-node.js 3001 localhost",
+    "node_2": "nodemon --watch backend -e js backend/network-node.js 3002 localhost",
+    "node_3": "nodemon --watch backend -e js backend/network-node.js 3003 localhost",
+    "node_4": "nodemon --watch backend -e js backend/network-node.js 3004 localhost",
+    "node_5": "nodemon --watch backend -e js backend/network-node.js 3005 localhost",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "steve benedict",
