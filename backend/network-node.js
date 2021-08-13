@@ -104,7 +104,7 @@ app.get("/mine", async (_req, res) => {
     await Promise.all(promises);
     await axios({
       data: {
-        amount: 50,
+        amount: 6.25,
         recipient: nodeAddress,
         sender: "00",
       },
@@ -155,19 +155,18 @@ app.post("/broadcast-block", ({ body: { newBlock } }, res) => {
 });
 
 app.post("/broadcast-node", async ({ body: { newNodeURL } }, res) => {
-  try {
-    // need a way to validate the url:
-    //   1. make sure its a valid url
-    //   2. make sure its really a node for these endpoints
-    //   3. https support
-    if (newNodeURL == null) {
-      throw new Error("no network node specified.");
-    }
-    if (
-      !nebCoin.networkNodes.includes(newNodeURL) &&
-      newNodeURL !== nebCoin.currentNodeURL
-    ) {
+  // need a way to validate the url:
+  //   1. make sure its a valid url
+  //   2. make sure its really a node for these endpoints
+  //   3. https support
+  if (newNodeURL == null) {
+    throw new Error("no network node specified.");
+  }
+  if (!nebCoin.networkNodes.includes(newNodeURL)) {
+    if (newNodeURL !== nebCoin.currentNodeURL) {
       nebCoin.networkNodes.push(newNodeURL);
+    }
+    try {
       const promises = nebCoin.networkNodes.map((networkNode) => {
         axios({
           data: {
@@ -188,13 +187,14 @@ app.post("/broadcast-node", async ({ body: { newNodeURL } }, res) => {
       res.status(200).send({
         message: "network node broadcast complete.",
       });
-    } else {
-      res.status(403).send({
-        message: "this network node exists.",
-      });
+    } catch (err) {
+      console.log("in catch");
+      sendError(err, res);
     }
-  } catch (err) {
-    sendError(err, res);
+  } else {
+    res.status(403).send({
+      message: "this network node exists.",
+    });
   }
 });
 
@@ -246,8 +246,8 @@ app.post(
       }
       const newTransaction = nebCoin.createTransaction(
         amount,
-        recipient,
-        sender
+        sender,
+        recipient
       );
       nebCoin.addPendingTransaction(newTransaction);
       const promises = nebCoin.networkNodes.map((networkNode) => {

@@ -111,7 +111,9 @@
 
           <!-- 'display address' table -->
           <h3 class="table-title" ng-if="addressData">Address</h3>
-          <p id="balance-text" ng-if="addressData">(Balance: {{ balance }})</p>
+          <p id="balance-text" ng-if="addressData">
+            (Balance: {{ addressData.balance }} BTC)
+          </p>
           <table class="table table-striped" ng-if="addressData">
             <thead>
               <tr>
@@ -161,7 +163,8 @@
         $scope.fetchAddressData = function (address) {
           $http.get(`/address/${address}`).then((response) => {
             $scope.addressData = response.data;
-            if (!$scope.addressTransactions.length) $scope.addressData = null;
+            if (!$scope.addressData.addressTransactions.length)
+              $scope.addressData = null;
             $scope.block = null;
             $scope.transaction = null;
           });
