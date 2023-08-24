@@ -10,7 +10,19 @@ class Blockchain {
     this.networkNodes = [];
     this.pendingTransactions = [];
     // create genesis block
-    this.createBlock(0, "0", "0");
+    this.genesisBlockData = {};
+    this.genesisPreviousBlockHash = "0";
+    this.genesisNonce = this.genRandomNonce();
+    this.genesisHash = this.hashBlock(
+      this.genesisPreviousBlockHash,
+      this.genesisBlockData,
+      this.genesisNonce
+    );
+    this.createBlock(
+      this.genesisNonce,
+      this.genesisPreviousBlockHash,
+      this.genesisHash
+    );
   }
 
   addPendingTransaction(transaction) {
@@ -105,6 +117,7 @@ class Blockchain {
   }
 
   isValidChain(blockchain) {
+    console.log("isvalidchain");
     // check blockchain block integrity, except the genesis block
     for (let i = 1; i < blockchain.length; i++) {
       const previousBlock = blockchain[i - 1];
@@ -121,25 +134,30 @@ class Blockchain {
         return false;
       }
     }
+    console.log("we here");
     // check the genesis block integrity
     const [{ hash, nonce, previousBlockHash, transactions }] = blockchain;
 
     return (
-      hash === "0" &&
-      nonce === 0 &&
-      previousBlockHash === "0" &&
+      hash === this.genesisHash &&
+      nonce === this.genesisNonce &&
+      previousBlockHash === this.genesisPreviousBlockHash &&
       transactions.length === 0
     );
   }
 
   proofOfWork(previousBlockHash, currentBlockData) {
-    let nonce = 0,
-      hash;
+    let hash, nonce;
     do {
-      hash = this.hashBlock(previousBlockHash, currentBlockData, nonce++);
+      nonce = this.genRandomNonce();
+      hash = this.hashBlock(previousBlockHash, currentBlockData, nonce);
     } while (hash.substring(0, 4) !== "0000");
 
-    return nonce - 1;
+    return nonce;
+  }
+
+  genRandomNonce() {
+    return Math.floor(Math.random() * 2 ** 32);
   }
 }
 
